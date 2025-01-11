@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>Simple Interface</h1>
+    <button id="postButton">POST</button>
+    <button id="findButton">FIND</button>
+    <button id="resetButton">RESET</button>
+
+    <script>
+        async function sendRequest(action) {
+            try {
+                const response = await fetch('/api/' + action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer YOUR_AUTH_TOKEN'
+                    },
+                    body: JSON.stringify({ timestamp: Date.now() })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                alert(`${action.toUpperCase()} successful: ${JSON.stringify(result)}`);
+            } catch (error) {
+                console.error(error);
+                alert(`Failed to ${action.toUpperCase()}: ${error.message}`);
+            }
+        }
+
+        document.getElementById('postButton').addEventListener('click', () => sendRequest('post'));
+        document.getElementById('findButton').addEventListener('click', () => sendRequest('find'));
+        document.getElementById('resetButton').addEventListener('click', () => sendRequest('reset'));
+    </script>
+</body>
+
+</html>
