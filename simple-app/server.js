@@ -1,14 +1,21 @@
 const express = require('express');
+const path = require('path');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
 // Инициализация приложения
 const app = express();
-const PORT = 3001;
+const PORT = 3002;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Обработчик маршрута по умолчанию
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // "База данных" в памяти (для простоты)
 let database = [];
@@ -34,6 +41,10 @@ app.post('/api/find', (req, res) => {
 app.post('/api/reset', (req, res) => {
     database = [];
     res.json({ message: 'All data has been reset' });
+});
+
+app.get('/', (req, res) => {
+    res.send('Сервер работает! Добро пожаловать!');
 });
 
 // Запуск сервера
