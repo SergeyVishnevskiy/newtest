@@ -22,43 +22,165 @@
             font-size: 16px;
         }
 
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            width: 80%;
+            max-width: 600px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
     </style>
 </head>
 
 <body>
     <h1>Simple Interface</h1>
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter username">
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" placeholder="Enter password">
+    </div>
+    <button id="login-btn">Login</button>
+
     <button id="postButton">POST</button>
     <button id="findButton">FIND</button>
     <button id="resetButton">RESET</button>
+    <button id="getProtectedDataButton">Get Protected Data</button>
+
+    <div id="output"></div>
 
     <script>
-        async function sendRequest(action) {
+        const apiUrl = 'http://localhost:3002';
+
+        // Функция для обновления вывода
+        function updateOutput(message) {
+            const output = document.getElementById('output');
+            output.innerText = message; // Перезаписываем вывод
+        }
+
+        // Функция отправки запросов
+        async function sendRequest(endpoint, method, data, token = null) {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             try {
-                const response = await fetch('/api/' + action, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer YOUR_AUTH_TOKEN'
-                    },
-                    body: JSON.stringify({ timestamp: Date.now() })
+                const response = await fetch(`${apiUrl}${endpoint}`, {
+                    method: method,
+                    headers: headers,
+                    body: data ? JSON.stringify(data) : null,
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                    throw new Error(`Error: ${response.status}`);
                 }
 
                 const result = await response.json();
-                alert(`${action.toUpperCase()} successful: ${JSON.stringify(result)}`);
+                return result;
             } catch (error) {
-                console.error(error);
-                alert(`Failed to ${action.toUpperCase()}: ${error.message}`);
+                updateOutput(`Error: ${error.message}`);
+                throw error;
             }
         }
 
-        document.getElementById('postButton').addEventListener('click', () => sendRequest('post'));
-        document.getElementById('findButton').addEventListener('click', () => sendRequest('find'));
-        document.getElementById('resetButton').addEventListener('click', () => sendRequest('reset'));
+        // Авторизация
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const result = await sendRequest('/login', 'POST', { username, password });
+                const token = result.token;
+
+                // Сохранение токена в localStorage
+                localStorage.setItem('authToken', token);
+                updateOutput('Login successful');
+            } catch (error) {
+                updateOutput('Login failed: ' + error.message);
+            }
+        });
+
+        // POST: отправка данных
+        document.getElementById('postButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                updateOutput('Please log in first');
+                return;
+            }
+
+            try {
+                const timestamp = new Date().toISOString();
+                const result = await sendRequest('/api/post', 'POST', { timestamp }, token);
+                updateOutput(`Response: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) { }
+        });
+
+        // FIND: получение данных
+        document.getElementById('findButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                updateOutput('Please log in first');
+                return;
+            }
+
+            try {
+                const result = await sendRequest('/api/find', 'POST', null, token);
+                if (result.data && result.data.length > 0) {
+                    let dataString = '';
+                    result.data.forEach(item => {
+                        dataString += `ID: ${item.id}, Timestamp: ${item.timestamp}\n`;
+                    });
+                    updateOutput(`Data found:\n${dataString}`);
+                } else {
+                    updateOutput('No data found');
+                }
+            } catch (error) { }
+        });
+
+        // RESET: сброс данных
+        document.getElementById('resetButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                updateOutput('Please log in first');
+                return;
+            }
+
+            try {
+                const result = await sendRequest('/api/reset', 'POST', null, token);
+                updateOutput(`Response: ${JSON.stringify(result, null, 2)}`);
+            } catch (error) { }
+        });
+
+        // Получение защищённых данных
+        document.getElementById('getProtectedDataButton').addEventListener('click', async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                updateOutput('Please log in first');
+                return;
+            }
+
+            try {
+                const result = await sendRequest('/protected', 'GET', null, token);
+                updateOutput(`Protected Data:\n${JSON.stringify(result, null, 2)}`);
+            } catch (error) { }
+        });
+
     </script>
 </body>
 
 </html>
+
+
+
+
+
+
+<!-- cd "C:\Users\sergey\newtest\simple-app" -->
